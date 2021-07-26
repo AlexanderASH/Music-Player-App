@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:music_player_app/main.dart';
+import 'package:music_player_app/src/widgets/customListItem.dart';
 
 
 class MusicPlayerScreen extends StatefulWidget {
@@ -83,8 +84,45 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
     WidgetsBinding.instance.removeObserver(this);
   }
 
+  List music = [];
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Music Player'),
+        elevation: 0.0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: this.music.length,
+              itemBuilder: (context, index) {
+                return customListItem(
+                  title: music[index]['title'],
+                  singer: music[index]['singer'],
+                  cover: music[index]['coverUrl'],
+                  onTap: () async {
+                    setState(() {
+                      this.currentTitle = this.music[index]['title'];
+                      this.currentSinger = this.music[index]['singer'];
+                      this.currentCover = this.music[index]['coverUrl'];
+                      this.url = this.music[index]['url'];
+                    });
+                    playMusic(this.url);
+                    this.box.put('playedOnce', 'true');
+                    this.box.put('currentCover', this.currentCover);
+                    this.box.put('currentSinger', this.currentSinger);
+                    this.box.put('currentTitle', this.currentTitle);
+                    this.box.put('url', this.url);
+                  }
+                );
+              }
+            )
+          )
+        ],
+      ),
+    );
   }
 }
