@@ -86,6 +86,44 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
 
   List music = [];
 
+  void playMusic(String url) async {
+    if (this.isPlaying && this.currentSong != this.url) {
+      this.audioPlayer.pause();
+      int result = await this.audioPlayer.play(url);
+      if (result == 1) {
+        setState(() {
+          this.currentSong = url;
+        });
+      }
+    }
+    if (!this.isPlaying) {
+      int result = await this.audioPlayer.play(url);
+      if (result == 1) {
+        setState(() {
+          this.isPlaying = true;
+          this.btnIcon = Icons.play_arrow;
+        });
+      }
+    }
+    this.audioPlayer.onDurationChanged.listen((event) { 
+      setState(() {
+        this.duration = event;
+      });
+    });
+
+    this.audioPlayer.onAudioPositionChanged.listen((event) {
+        setState(() {
+          this.position = event;
+        });
+    });
+
+  }
+
+  void seekToSecond(int second) {
+    Duration newDuration = Duration(seconds: second);
+    this.audioPlayer.seek(newDuration);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,6 +158,103 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
                 );
               }
             )
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x55212121),
+                  blurRadius: 8.0
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Slider.adaptive(
+                  value: this.position.inSeconds.toDouble(),
+                  min: 0,
+                  max: this.position.inSeconds.toDouble(),
+                  onChanged: (value) {
+                    seekToSecond(value.toInt());
+                  }
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        this.position.inSeconds.toDouble().toString(),
+                      ),
+                      Text(
+                        this.duration.inSeconds.toDouble().toString(),
+                      ),
+                    ],
+                  )
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Container(
+                      height: 60.0,
+                      width: 60.0,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16.0),
+                        image: DecorationImage(
+                          image: NetworkImage(this.currentCover)
+                        )
+                      ),
+                    ),
+                    SizedBox(width: 10.0,),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            this.currentTitle,
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w600
+                            ),
+                          ),
+                          SizedBox(height: 5.0,),
+                          Text(
+                            this.currentSinger,
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14.0
+                            ),
+                          )
+                        ],
+                      )
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        if (this.box.get('playedOnce') == 'true' && this.isPlaying == false) {
+                          this.playMusic(this.url);
+                        }
+
+                        if (this.isPlaying) {
+                          this.audioPlayer.pause();
+                          setState(() {
+                            this.btnIcon = Icons.pause;
+                            this.isPlaying = false;
+                          });
+                        } else {
+                          this.audioPlayer.resume();
+                          setState(() {
+                            this.btnIcon = Icons.play_arrow;
+                            this.isPlaying = true;
+                          });
+                        }
+                      }, 
+                      icon: Icon(this.btnIcon, size: 42.0,),
+                    )
+                  ],
+                )
+              ],
+            ),
           )
         ],
       ),
