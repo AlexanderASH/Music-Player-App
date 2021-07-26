@@ -2,8 +2,8 @@ import 'package:hive/hive.dart';
 import 'package:meta/meta.dart';
 import 'dart:typed_data';
 
-@HiveType(typeId: 1)
-class Music {
+@HiveType(typeId: 0)
+class Music extends HiveObject {
   @HiveField(0)
   final String trackName;
   @HiveField(1)
@@ -34,6 +34,9 @@ class Music {
   final int bitrate;
   @HiveField(14)
   final Uint8List albumArt;
+  @HiveField(15)
+  final String path;
+
 
   Music({
     @required this.trackName,
@@ -50,6 +53,7 @@ class Music {
     @required this.mimeType,
     @required this.trackDuration,
     @required this.bitrate,
-    @required this.albumArt
+    @required this.albumArt,
+    @required this.path,
   });
 }

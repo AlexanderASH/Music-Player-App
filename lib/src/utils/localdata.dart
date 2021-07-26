@@ -29,4 +29,8 @@ class LocalData {
   dynamic getValue(dynamic key) {
     return this._box.get(key);
   }
+
+  dynamic getAt() {
+    return this._box.getAt(1);
+  }
 }

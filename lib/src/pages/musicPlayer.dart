@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:flutter_media_metadata/flutter_media_metadata.dart';
 import 'package:music_player_app/main.dart';
+import 'package:music_player_app/src/models/Music.dart';
 import 'package:music_player_app/src/utils/BaDumTss.dart';
+import 'package:music_player_app/src/utils/constants.dart';
+import 'package:music_player_app/src/utils/localdata.dart';
 import 'package:music_player_app/src/widgets/customListItem.dart';
 
 
@@ -16,42 +21,33 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
   Duration duration;
   Duration position;
   bool isPlaying = false;
+  bool isLoading = true;
   IconData btnIcon = Icons.play_arrow;
 
   BaDumTss instance;
   AudioPlayer audioPlayer;
 
-  Box box;
+  LocalData localData;
+  Music music;
+  List<Music> songs;
 
-  String currentSong = "";
-  String currentCover = "";
-  String currentTitle = "";
-  String currentSinger = "";
-  String url = "";
 
   @override
   void initState() { 
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    this.box = Hive.box<String>('myBox');
+    this.localData = getIt<LocalData>();
     this.instance = getIt<BaDumTss>();
     this.audioPlayer = this.instance.audio;
     this.duration = new Duration();
     this.position = new Duration();
+    this.music = new Music();
+    this.songs = [];
 
-    if (this.box.get('playedOnce') == "false") {
-      setState(() {
-        this.currentCover = "";
-        this.currentTitle = "Choose a song to play";
-      });
-    }
-
-    if (this.box.get('playedOnce') == "true") {
-      this.currentCover = this.box.get('currentCover');
-      this.currentSinger = this.box.get('currentSinger');
-      this.currentTitle = this.box.get('currentTitle');
-      this.url = this.box.get('url');
-    }
+    // if (this.localData.getValue('playedOnce') == "true") {
+    //   this.music = this.localData.getValue('actual');
+    // }
+    this._loadLocalData();
   }
 
   @override
@@ -85,27 +81,26 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
     WidgetsBinding.instance.removeObserver(this);
   }
 
-  List music = [];
-
-  void playMusic(String url) async {
-    if (this.isPlaying && this.currentSong != this.url) {
+  void playMusic(String path) async {
+    if (this.isPlaying && this.music.path != path) {
       this.audioPlayer.pause();
-      int result = await this.audioPlayer.play(url);
+      int result = await this.audioPlayer.play(path);
       if (result == 1) {
         setState(() {
-          this.currentSong = url;
         });
       }
     }
+
     if (!this.isPlaying) {
-      int result = await this.audioPlayer.play(url);
+      int result = await this.audioPlayer.play(path);
       if (result == 1) {
         setState(() {
           this.isPlaying = true;
-          this.btnIcon = Icons.play_arrow;
+          this.btnIcon = Icons.pause;
         });
       }
     }
+    
     this.audioPlayer.onDurationChanged.listen((event) { 
       setState(() {
         this.duration = event;
@@ -125,6 +120,37 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
     this.audioPlayer.seek(newDuration);
   }
 
+  Future<void> _loadLocalData() async {
+    final files = Directory(PATH).listSync().where((file) => file.path.endsWith('.mp3')).toList();
+    await Future.forEach<FileSystemEntity>(files, (file) async {
+      MetadataRetriever retriever = MetadataRetriever();
+      await retriever.setFile(File(file.path));
+      Metadata metadata = await retriever.metadata;
+      this.songs.add(Music(
+        albumArt: retriever.albumArt,
+        albumArtistName: metadata.albumArtistName,
+        albumLength: metadata.albumLength,
+        albumName: metadata.albumName,
+        authorName: metadata.authorName,
+        bitrate: metadata.bitrate,
+        discNumber: metadata.discNumber,
+        genre: metadata.genre,
+        mimeType: metadata.mimeType,
+        trackArtistNames: metadata.trackArtistNames,
+        trackDuration: metadata.trackDuration,
+        trackName: metadata.trackName,
+        trackNumber: metadata.trackNumber,
+        writerName: metadata.writerName,
+        year: metadata.year,
+        path: file.path
+      ));
+    });
+
+    setState(() {
+      this.isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,30 +161,28 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: this.music.length,
-              itemBuilder: (context, index) {
-                return customListItem(
-                  title: music[index]['title'],
-                  singer: music[index]['singer'],
-                  cover: music[index]['coverUrl'],
-                  onTap: () async {
-                    setState(() {
-                      this.currentTitle = this.music[index]['title'];
-                      this.currentSinger = this.music[index]['singer'];
-                      this.currentCover = this.music[index]['coverUrl'];
-                      this.url = this.music[index]['url'];
-                    });
-                    playMusic(this.url);
-                    this.box.put('playedOnce', 'true');
-                    this.box.put('currentCover', this.currentCover);
-                    this.box.put('currentSinger', this.currentSinger);
-                    this.box.put('currentTitle', this.currentTitle);
-                    this.box.put('url', this.url);
-                  }
-                );
-              }
-            )
+            child: this.isLoading
+            ? Center(child: CircularProgressIndicator(),)
+            : ListView.builder(
+                padding: EdgeInsets.all(10.0),
+                itemCount: this.songs.length,
+                itemBuilder: (context, index) {
+                  return customListItem(
+                    music: this.songs[index],
+                    onTap: () {
+                      this.playMusic(this.songs[index].path);
+                      this.music = this.songs[index];
+                      // this.localData.addValue('playedOnce', "true");
+                      // // this.localData.addValue('music', this.music);
+                      // this.localData.addObject(this.music);
+                      // print(this.localData.getValue('playedOnce'));
+                      // // print(this.localData.getValue('music'));
+                      // print(this.localData.getAt());
+                    //TODO: save to db
+                    }
+                  );
+                }
+              )
           ),
           Container(
             decoration: BoxDecoration(
@@ -194,65 +218,70 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
                     ],
                   )
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      height: 60.0,
-                      width: 60.0,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16.0),
-                        image: DecorationImage(
-                          image: NetworkImage(this.currentCover)
+                Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(
+                        height: 60.0,
+                        width: 60.0,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.0),
+                          image: DecorationImage(
+                            image: music.albumArt == null
+                            ? AssetImage('assets/no_logo.jpg')
+                            : MemoryImage(music.albumArt)
+                          )
+                        ),
+                      ),
+                      SizedBox(width: 10.0,),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              this.music.trackName ?? "Choose a song to play",
+                              style: TextStyle(
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.w600
+                              ),
+                            ),
+                            SizedBox(height: 5.0,),
+                            Text(
+                              this.music.authorName ?? "Unknown",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14.0
+                              ),
+                            )
+                          ],
                         )
                       ),
-                    ),
-                    SizedBox(width: 10.0,),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            this.currentTitle,
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.w600
-                            ),
-                          ),
-                          SizedBox(height: 5.0,),
-                          Text(
-                            this.currentSinger,
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14.0
-                            ),
-                          )
-                        ],
-                      )
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        if (this.box.get('playedOnce') == 'true' && this.isPlaying == false) {
-                          this.playMusic(this.url);
-                        }
+                      IconButton(
+                        onPressed: () {
+                          if (this.localData.getValue('playedOnce') == 'true' && this.isPlaying == false) {
+                            this.playMusic(this.music.path);
+                          }
 
-                        if (this.isPlaying) {
-                          this.audioPlayer.pause();
-                          setState(() {
-                            this.btnIcon = Icons.pause;
-                            this.isPlaying = false;
-                          });
-                        } else {
-                          this.audioPlayer.resume();
-                          setState(() {
-                            this.btnIcon = Icons.play_arrow;
-                            this.isPlaying = true;
-                          });
-                        }
-                      }, 
-                      icon: Icon(this.btnIcon, size: 42.0,),
-                    )
-                  ],
+                          if (this.isPlaying) {
+                            this.audioPlayer.pause();
+                            setState(() {
+                              this.btnIcon = Icons.play_arrow;
+                              this.isPlaying = false;
+                            });
+                          } else {
+                            this.audioPlayer.resume();
+                            setState(() {
+                              this.btnIcon = Icons.pause;
+                              this.isPlaying = true;
+                            });
+                          }
+                        }, 
+                        icon: Icon(this.btnIcon, size: 42.0,),
+                      )
+                    ],
+                  ),
                 )
               ],
             ),

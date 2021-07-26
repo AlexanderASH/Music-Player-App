@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:music_player_app/src/models/Music.dart';
 
 Widget customListItem({
-  String title, 
-  String singer, 
-  String cover, 
+  Music music,
   onTap
 }) {
   return InkWell(
@@ -18,15 +17,18 @@ Widget customListItem({
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16.0),
               image: DecorationImage(
-                image: NetworkImage(cover)
+                image: music.albumArt == null
+                ? AssetImage('assets/no_logo.jpg')
+                : MemoryImage(music.albumArt)
               )
             ),
           ),
           SizedBox(width: 10.0,),
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
+                music.trackName ?? 'Unknown',
                 style: TextStyle(
                   fontSize: 18.0,
                   fontWeight: FontWeight.w600
@@ -34,7 +36,7 @@ Widget customListItem({
               ),
               SizedBox(height: 5.0,),
               Text(
-                singer,
+                music.authorName ?? 'Unknown',
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 16.0
