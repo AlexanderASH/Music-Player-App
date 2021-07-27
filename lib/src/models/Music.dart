@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
-import 'package:meta/meta.dart';
 import 'dart:typed_data';
+
+part 'Music.g.dart';
 
 @HiveType(typeId: 0)
 class Music extends HiveObject {
@@ -39,21 +40,21 @@ class Music extends HiveObject {
 
 
   Music({
-    @required this.trackName,
-    @required this.trackArtistNames,
-    @required this.albumName,
-    @required this.albumArtistName,
-    @required this.trackNumber,
-    @required this.albumLength,
-    @required this.year,
-    @required this.genre,
-    @required this.authorName,
-    @required this.writerName,
-    @required this.discNumber,
-    @required this.mimeType,
-    @required this.trackDuration,
-    @required this.bitrate,
-    @required this.albumArt,
-    @required this.path,
+    this.trackName,
+    this.trackArtistNames,
+    this.albumName,
+    this.albumArtistName,
+    this.trackNumber,
+    this.albumLength,
+    this.year,
+    this.genre,
+    this.authorName,
+    this.writerName,
+    this.discNumber,
+    this.mimeType,
+    this.trackDuration,
+    this.bitrate,
+    this.albumArt,
+    this.path,
   });
 }

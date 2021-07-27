@@ -31,7 +31,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
   Music music;
   List<Music> songs;
 
-
   @override
   void initState() { 
     super.initState();
@@ -44,9 +43,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
     this.music = new Music();
     this.songs = [];
 
-    // if (this.localData.getValue('playedOnce') == "true") {
-    //   this.music = this.localData.getValue('actual');
-    // }
+    if (this.localData.getValue('playedOnce') == "true") {
+      this.music = this.localData.getValue('music');
+    }
+    
     this._loadLocalData();
   }
 
@@ -56,7 +56,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       this.audioPlayer.pause();
       setState(() {
-        this.btnIcon = Icons.pause;
+        this.btnIcon = Icons.play_arrow;
       });
     }
 
@@ -64,7 +64,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
       if (this.isPlaying) {
         audioPlayer.resume();
         setState(() {
-          btnIcon = Icons.play_arrow;
+          btnIcon = Icons.pause;
         });
       }
     }
@@ -78,6 +78,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
   @override
   void dispose() {
     super.dispose();
+    this.localData.close();
     WidgetsBinding.instance.removeObserver(this);
   }
 
@@ -113,6 +114,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
         });
     });
 
+    this.audioPlayer.onPlayerCompletion.listen((event) { 
+      setState(() {
+        this.btnIcon = Icons.play_arrow;
+      });
+    });
   }
 
   void seekToSecond(int second) {
@@ -172,13 +178,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
                     onTap: () {
                       this.playMusic(this.songs[index].path);
                       this.music = this.songs[index];
-                      // this.localData.addValue('playedOnce', "true");
-                      // // this.localData.addValue('music', this.music);
-                      // this.localData.addObject(this.music);
-                      // print(this.localData.getValue('playedOnce'));
-                      // // print(this.localData.getValue('music'));
-                      // print(this.localData.getAt());
-                    //TODO: save to db
+                      this.localData.addValue('playedOnce', "true");
+                      this.localData.addValue('music', this.music);
                     }
                   );
                 }
@@ -198,8 +199,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
               children: [
                 Slider.adaptive(
                   value: this.position.inSeconds.toDouble(),
-                  min: 0,
-                  max: this.position.inSeconds.toDouble(),
+                  min: 0.0,
+                  max: this.duration.inSeconds.toDouble(),
                   onChanged: (value) {
                     seekToSecond(value.toInt());
                   }

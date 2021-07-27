@@ -1,3 +1,3 @@
 
 const String PATH = '/storage/emulated/0/Music/';
-const String DB_NAME = 'myBox';
+const String DB_NAME = 'music';

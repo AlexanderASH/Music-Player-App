@@ -1,5 +1,6 @@
 
 import 'package:hive/hive.dart';
+import 'package:music_player_app/src/models/Music.dart';
 import 'package:music_player_app/src/utils/constants.dart';
 
 class LocalData {
@@ -7,8 +8,9 @@ class LocalData {
 
   Future<void> init(String path) async {
       Hive.init(path);
-      await Hive.openBox<String>(DB_NAME);
-      this._box = Hive.box<String>(DB_NAME);
+      Hive.registerAdapter(MusicAdapter());
+      await Hive.openBox(DB_NAME);
+      this._box = Hive.box(DB_NAME);
       this._loadData();
   }
 
@@ -22,15 +24,11 @@ class LocalData {
     this._box.put(key, value);
   }
 
-  void addObject(dynamic value) {
-    this._box.add(value);
-  }
-
   dynamic getValue(dynamic key) {
     return this._box.get(key);
   }
 
-  dynamic getAt() {
-    return this._box.getAt(1);
+  void close() {
+    this._box.close();
   }
 }
