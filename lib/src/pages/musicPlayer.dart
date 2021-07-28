@@ -8,6 +8,7 @@ import 'package:music_player_app/src/models/Music.dart';
 import 'package:music_player_app/src/utils/BaDumTss.dart';
 import 'package:music_player_app/src/utils/constants.dart';
 import 'package:music_player_app/src/utils/localdata.dart';
+import 'package:music_player_app/src/utils/time.dart';
 import 'package:music_player_app/src/widgets/customListItem.dart';
 
 
@@ -83,11 +84,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
   }
 
   void playMusic(String path) async {
+    this.position = Duration(seconds: 0);
     if (this.isPlaying && this.music.path != path) {
       this.audioPlayer.pause();
       int result = await this.audioPlayer.play(path);
       if (result == 1) {
         setState(() {
+          this.btnIcon = Icons.pause;
         });
       }
     }
@@ -210,12 +213,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> with WidgetsBindi
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        this.position.inSeconds.toDouble().toString(),
-                      ),
-                      Text(
-                        this.duration.inSeconds.toDouble().toString(),
-                      ),
+                      Text(Time.getDuration(this.position)),
+                      Text(Time.getDuration(this.duration)),
                     ],
                   )
                 ),
